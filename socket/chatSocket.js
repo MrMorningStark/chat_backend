@@ -1,4 +1,5 @@
 const { getDB } = require("../db/mongo");
+const online = require("../utils/onlineUsers");
 
 exports.handleSocketConnection = (socket, io) => {
     console.log("User connected:", socket.id);
@@ -6,6 +7,7 @@ exports.handleSocketConnection = (socket, io) => {
     // Storing the username and socket ID mapping
     socket.on("register", (username) => {
         socket.username = username;
+        online.setOnline(username, socket.id);
         console.log(`User registered: ${username}`);
     });
 
@@ -44,6 +46,13 @@ exports.handleSocketConnection = (socket, io) => {
     });
 
     socket.on("disconnect", () => {
+        if (socket.username) {
+            online.setOffline(socket.username);
+            setTimeout(() => {
+                // Remove user from online list after a short delay (optional)
+                online.removeUser(socket.username);
+            }, 1000 * 60 * 10); // 10 minutes, adjust as needed
+        }
         console.log("User disconnected:", socket.id);
     });
 };
